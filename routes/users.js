@@ -20,9 +20,11 @@ users.post('/login', async (req, res) => {
             return
         }
 
-        const accessToken = jwt.sign({id: user.id}, process.env.TOKEN_SECRET, { expiresIn: 86400 })
+        const accessToken = jwt.sign({id: user.id, role: user.role}, process.env.TOKEN_SECRET, { expiresIn: 86400 })
         const refreshToken = jwt.sign({id: user.id}, process.env.REFRESH_TOKEN_SECRET, { expiresIn: 525600 })
     
+        //save refresh token in db
+
         res.cookie('JWT', accessToken, {
             maxAge: 86400000,
             httpOnly: true
@@ -71,7 +73,23 @@ users.post('/register', async (req, res) => {
 })
 
 users.post('/refresh', (req, res) => {
-    const refreshToken = req.body.token
+	const refreshToken = req.body.token
+
+	if (!refreshToken) {
+		return res.status(401)
+	}
+
+	// TODO: Check if refreshToken exists in DB
+
+	const validToken = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+	if (!validToken) {
+		return res.status(403)
+	}
+
+	const accessToken = generateAccessToken({ id: 1 })
+
+	res.send({ accessToken })
 })
 
 function authenticate(req, res, next) {
@@ -86,4 +104,10 @@ function authenticate(req, res, next) {
     })
 }
 
-export {authenticate, users}
+function isAdmin(req, res, next){
+    if (req.user.role !== 'admin')
+        return res.sendStatus(403)
+    next()
+}
+
+export {authenticate, users, isAdmin}

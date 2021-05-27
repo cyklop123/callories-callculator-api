@@ -5,6 +5,8 @@ import cors from 'cors'
 import mongoose from 'mongoose'
 
 import { authenticate, users } from './routes/users'
+import dashboard from './routes/dashboard'
+import products from './routes/products'
 
 dotenv.config()
 
@@ -23,6 +25,7 @@ app.use(cookieParser())
 app.use(cors())
 
 app.use('/users', users)
-app.get('/', authenticate, (req, res) => res.send("OK"))
+app.use('/products', authenticate, products)
+app.use('/', authenticate, dashboard)
 
 app.listen(process.env.PORT, () => console.log("server is running on port " + process.env.PORT))
