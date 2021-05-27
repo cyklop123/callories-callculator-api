@@ -1,4 +1,5 @@
 import express from 'express'
+import mongoose from 'mongoose'
 
 import {isAdmin} from './users'
 import Product from '../models/product'
@@ -22,12 +23,18 @@ products.get('/', async(req, res) => {
 
 products.get('/:id', async(req, res) => {
     try{
-        const products = await Product.findById(req.params.id, {name:1, kcal:1, carbs:1, prots:1, fats:1}).exec()
-        
-        res.json(products)
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.sendStatus(404)
+
+        const product = await Product.findById(req.params.id, {name:1, kcal:1, carbs:1, prots:1, fats:1}).exec()
+
+        if(!product)
+            return res.sendStatus(404)
+        res.json(product)
     }  
     catch(e) {
-        res.sendStatus(404)
+        console.log(e)
+        res.sendStatus(500)
     }
 })
 
@@ -51,7 +58,7 @@ products.post('/', isAdmin, (req, res) => {
 
         newProduct.save(err => {
             if(err) throw err
-            res.send("Product created")
+            res.json(newProduct)
         })
     }  
     catch(e) {
@@ -60,8 +67,20 @@ products.post('/', isAdmin, (req, res) => {
     }
 })
 
-products.delete('/:id', isAdmin, (req, res) => {
-    res.send("its working")
+products.delete('/:id', isAdmin, async(req, res) => {
+    try{
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.sendStatus(404)
+
+        const product = await Product.findByIdAndRemove(req.params.id, {__v:0}).exec()
+        if(!product)
+            return res.sendStatus(404)
+        res.json(product)
+    }
+    catch(e) {
+        console.log(e)
+        return res.sendStatus(500)
+    }
 })
 
 export default products
