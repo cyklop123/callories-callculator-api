@@ -83,4 +83,30 @@ products.delete('/:id', isAdmin, async(req, res) => {
     }
 })
 
+products.patch('/:id', isAdmin, async(req, res) => {
+    try{
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.sendStatus(404)
+
+        let updateObj = {}
+        if(typeof(req.body.name) !== 'undefined') updateObj['name'] = req.body.name
+        if(typeof(req.body.kcal) !== 'undefined') updateObj['kcal'] = req.body.kcal
+        if(typeof(req.body.carbs) !== 'undefined') updateObj['carbs'] = req.body.carbs
+        if(typeof(req.body.prots) !== 'undefined') updateObj['prots'] = req.body.prots
+        if(typeof(req.body.fats) !== 'undefined') updateObj['fats'] = req.body.fats
+        
+        const product = await Product.findOneAndUpdate({_id: req.params.id}, updateObj)
+        if (!product)
+            return res.sendStatus(404)
+
+        
+        res.json(product)
+    }
+    catch(e)
+    {
+        console.log(e)
+        res.sendStatus(500)
+    }
+})
+
 export default products
