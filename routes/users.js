@@ -51,7 +51,7 @@ users.post('/register', async (req, res) => {
 
         if (username.lenght < 3 || password < 3 || email < 5)
         {
-            res.sendStatus(403)
+            res.sendStatus(404)
             return
         }
 
