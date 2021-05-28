@@ -71,7 +71,7 @@ dashboard.get('/:date', async(req, res) => {
     }
 })
 
-dashboard.post('/', isAdmin, (req, res) => {
+dashboard.post('/', isAdmin, async (req, res) => {
     const userId = typeof(req.user.id) !== 'undefined' ? req.user.id : -1
     const productId = typeof(req.body.productId) !== 'undefined' ? req.body.productId : -1
     const quantity = typeof(req.body.quantity) !== 'undefined' ? req.body.quantity : -1
@@ -79,6 +79,11 @@ dashboard.post('/', isAdmin, (req, res) => {
 
     if (userId < 0 || productId < 0 || quantity < 0 )
         return res.sendStatus(400)
+
+    const product = (await Product.find({ _id: newProduct.product_id }))[0]
+
+    if (!product)
+        return res.sendStatus(404)
 
     try{
         let newProduct = new UserProduct()
@@ -89,8 +94,6 @@ dashboard.post('/', isAdmin, (req, res) => {
 
         newProduct.save(async err => {
             if(err) throw err
-            
-            const product = (await Product.find({ _id: newProduct.product_id }))[0]
             
             res.json({
                 _id: newProduct.id,
