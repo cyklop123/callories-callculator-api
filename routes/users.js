@@ -2,6 +2,7 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 
 import User from '../models/user'
+import Token from '../models/token'
 
 const users = express.Router()
 
@@ -20,10 +21,14 @@ users.post('/login', async (req, res) => {
             return
         }
 
-        const accessToken = jwt.sign({id: user.id, role: user.role}, process.env.TOKEN_SECRET, { expiresIn: 86400 })
-        const refreshToken = jwt.sign({id: user.id}, process.env.REFRESH_TOKEN_SECRET, { expiresIn: 525600 })
+        const accessToken = generateAccessToken({id: user.id, role: user.role})
+        const refreshToken = jwt.sign({id: user.id, role: user.role}, process.env.REFRESH_TOKEN_SECRET)
     
-        //save refresh token in db
+        let token = Token({
+            refresh: refreshToken
+        })
+
+        await token.save()
 
         res.cookie('JWT', accessToken, {
             maxAge: 86400000,
@@ -49,7 +54,7 @@ users.post('/register', async (req, res) => {
             return
         }
 
-        if (username.lenght < 3 || password < 3 || email < 5)
+        if (username.lenght < 3 || password.lenght < 3 || email.lenght < 5)
         {
             res.sendStatus(400)
             return
@@ -72,25 +77,67 @@ users.post('/register', async (req, res) => {
     }
 })
 
-users.post('/refresh', (req, res) => {
+users.post('/refresh', async (req, res) => {
 	const refreshToken = req.body.token
 
 	if (!refreshToken) {
-		return res.status(401)
+		return res.sendStatus(401)
 	}
 
-	// TODO: Check if refreshToken exists in DB
+	try{
+        
+        if(!await Token.exists({refresh: refreshToken})) return res.sendStatus(403)
 
-	const validToken = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET)
+        const validToken = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET)
 
-	if (!validToken) {
-		return res.status(403)
-	}
+        if (!validToken) {
+            return res.sendStatus(403)
+        }
+        
+        const accessToken = generateAccessToken({ id: validToken.id, role: validToken.role })
 
-	const accessToken = generateAccessToken({ id: 1 })
+        res.cookie('JWT', accessToken, {
+            maxAge: 86400000,
+            httpOnly: true
+        })
 
-	res.send({ accessToken })
+        res.send({ accessToken })
+    }
+    catch(e)
+    {
+        console.log(e)
+        res.sendStatus(500)
+    }
 })
+
+users.delete('/logout', async(req, res) => {
+	const refreshToken = req.body.token
+
+	if (!refreshToken) {
+		return res.sendStatus(401)
+	}
+
+    try{
+        const token = await Token.findOneAndRemove({refresh: refreshToken}).exec()
+
+        if(!token)
+            return res.sendStatus(404)
+
+        res.clearCookie("JWT")
+
+        res.json({ message: "User successfully logout" })
+    }
+    catch(e)
+    {
+        console.log(e)
+        res.sendStatus(500)
+    }
+
+})
+
+function generateAccessToken(payload) {
+	return jwt.sign(payload, process.env.TOKEN_SECRET, { expiresIn: 86400 })
+}
 
 function authenticate(req, res, next) {
     const token = req.cookies.JWT
