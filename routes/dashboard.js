@@ -1,38 +1,75 @@
 import express from 'express'
 import {isAdmin} from './users'
 import UserProduct from '../models/userproduct'
-import productSchema from '../models/product'
 import mongoose from 'mongoose'
+import moment from 'moment'
+import Product from '../models/product'
 
 const dashboard = express.Router()
 
-dashboard.get('/', isAdmin, async (req, res) => {
-    const user_id = req.user.id
+dashboard.get('/:date', async(req, res) => {
+    let date = new Date(req.params.date)
+    
+    if(isNaN(date.getTime()))
+        return res.sendStatus(400)
+    
+    date = moment(date)
+    date.set({hour: 0, minute: 0, second: 0, millisecond: 0})
+    
+    const today = date.toDate()
+    const tomorrow = date.add(1, 'd').toDate()
 
-    try {
-        const userProducts = await UserProduct.find({ user_id }) 
+    try{
+        const userProducts = await UserProduct.aggregate([
+            {
+                $match: {
+                    user_id: mongoose.Types.ObjectId(req.user.id),
+                    date: {
+                        $gte: today,
+                        $lt: tomorrow
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: "product"
+                }
+            },
+            {
+                $unwind: '$product'
+            },
+            {
+                $project: {
+                    date: 1,
+                    quantity:1,
+                    'product.name': 1,
+                    'product.kcal': { $divide:[ { $multiply: ['$product.kcal', '$quantity'] } , 100] },
+                    'product.carbs': { $divide:[ { $multiply: ['$product.carbs', '$quantity'] } , 100] },
+                    'product.prots': { $divide:[ { $multiply: ['$product.prots', '$quantity'] } , 100] },
+                    'product.fats': { $divide:[ { $multiply: ['$product.fats', '$quantity'] } , 100] }
+                }
+            }
+        ])
         
-        const products = await mapUserProducts(userProducts)
-        const summary = mapUserSummary(products)
-
-        res.json({ userProducts: products, summary: summary })
-    } catch (e) {
+        let summary = {kcal:0, carbs:0, prots:0, fats:0}
+        
+        userProducts.forEach((prod) => {
+            summary.kcal += prod.product.kcal
+            summary.carbs += prod.product.carbs
+            summary.prots += prod.product.prots
+            summary.fats += prod.product.fats
+        })
+        
+        res.json({userProducts: userProducts, summary })
+    }
+    catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 })
-
-dashboard.get('/:date', async (req, res) => {
-    const date = req.params.date
-    
-    try {
-        const userProducts = await UserProduct.find({ date }) 
-        
-        const products = await mapUserProducts(userProducts)
-
-        res.json({ userProducts: products })
-    } catch (e) {
-        res.sendStatus(500)
-    }})
 
 dashboard.post('/', isAdmin, (req, res) => {
     const userId = typeof(req.user.id) !== 'undefined' ? req.user.id : -1
@@ -52,7 +89,21 @@ dashboard.post('/', isAdmin, (req, res) => {
 
         newProduct.save(async err => {
             if(err) throw err
-            res.json((await mapUserProducts([newProduct]))[0])
+            
+            const product = (await Product.find({ _id: newProduct.product_id }))[0]
+            
+            res.json({
+                _id: newProduct.id,
+                date: newProduct.date,
+                quantity: newProduct.quantity,
+                product: {
+                    name: product.name,
+                    kcal: product.kcal,
+                    carbs: product.carbs,
+                    prots: product.prots,
+                    fats: product.fats,
+                }
+            })
         })
     }  
     catch(e) {
@@ -71,7 +122,7 @@ dashboard.delete('/:id', isAdmin, async (req, res) => {
         if(!userProduct)
             return res.sendStatus(404)
 
-        res.json((await mapUserProducts([userProduct]))[0])
+        res.sendStatus(204)
     }
     catch(e) {
         console.log(e)
@@ -87,17 +138,26 @@ dashboard.patch('/:id', isAdmin, async (req, res) => {
         let updateObj = {}
 
         if(typeof(req.body.quantity) !== 'undefined') updateObj['quantity'] = req.body.quantity
-        if(typeof(req.body.date) !== 'undefined') updateObj['date'] = req.body.date
         
-        const product = await UserProduct.findOneAndUpdate({_id: req.params.id}, updateObj)
+        const userProduct = await UserProduct.findOneAndUpdate({_id: req.params.id}, updateObj)
         
-        if (!product)
+        if (!userProduct)
             return res.sendStatus(404)
 
-        product['date'] = req.body.date
-        product['quantity'] = req.body.quantity
+        const product = (await Product.find({ _id: userProduct.product_id }))[0]
         
-        res.json((await mapUserProducts([product]))[0])
+        res.json({
+            _id: userProduct.id,
+            date: userProduct.date,
+            quantity: req.body.quantity,
+            product: {
+                name: product.name,
+                kcal: product.kcal,
+                carbs: product.carbs,
+                prots: product.prots,
+                fats: product.fats,
+            }
+        })
     }
     catch(e)
     {
@@ -105,42 +165,5 @@ dashboard.patch('/:id', isAdmin, async (req, res) => {
         res.sendStatus(500)
     }
 })
-
-async function mapUserProducts(userProducts) {
-    return Promise.all(userProducts.map(async userProduct => {
-        
-        const product = (await productSchema.find({ _id: userProduct.product_id }))[0]
-
-        return {
-            userProductId: userProduct._id,
-            date: userProduct.date,
-            quantity: userProduct.quantity,
-            productId: product._id,
-            name: product.name,
-            kcal: product.kcal,
-            prots: product.prots,
-            carbs: product.carbs,
-            fats: product.fats,
-        }
-    }))
-}
-
-function mapUserSummary(products) {
-    const values = [0, 0, 0, 0]
-
-    for (let i; i < products.length; i++) {
-        values[0] += product.prots * product.quantity / 100
-        values[1] += product.carbs * product.quantity / 100
-        values[2] += product.fats * product.quantity / 100
-        values[3] += product.kcal * product.quantity / 100
-    }
-
-    return {
-        kcal: values[0],
-        carbs: values[1],
-        fats: values[2],
-        prots: values[3],
-    }
-}
 
 export default dashboard
