@@ -9,7 +9,7 @@ const products = express.Router()
 products.get('/', async(req, res) => {
     const name = req.query.name ? req.query.name : ""
     if(name.length < 3)
-        return res.sendStatus(404)
+        return res.sendStatus(400)
     
     try{
         const products = await Product.find({name: {$regex: `.*${name}.*`, $options: 'i'}}, {name: 1, kcal: 1, carbs: 1, prots: 1, fats: 1}).exec()
@@ -17,6 +17,7 @@ products.get('/', async(req, res) => {
         res.json(products)
     }  
     catch(e) {
+        console.log(e)
         res.sendStatus(500)
     }
 })
@@ -46,7 +47,7 @@ products.post('/', isAdmin, (req, res) => {
     const fats = typeof(req.body.fats) !== 'undefined' ? req.body.fats : -1
 
     if(name.length < 3 || kcal < 0 || carbs < 0 || prots < 0 || fats < 0)
-        return res.sendStatus(404)
+        return res.sendStatus(400)
     
     try{
         let newProduct = new Product()
