@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const userproductSchema = new mongoose.Schema({
+const userProductSchema = new mongoose.Schema({
     user_id: {
         type:mongoose.Schema.Types.ObjectId,
         required: true
@@ -19,4 +19,4 @@ const userproductSchema = new mongoose.Schema({
     }
 })
 
-export default mongoose.model('UserProduct', userproductSchema)
+export default mongoose.model('UserProduct', userProductSchema)
