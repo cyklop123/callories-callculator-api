@@ -72,23 +72,23 @@ dashboard.get('/:date', async(req, res) => {
 })
 
 dashboard.post('/', isAdmin, async (req, res) => {
-    const userId = typeof(req.user.id) !== 'undefined' ? req.user.id : -1
     const productId = typeof(req.body.productId) !== 'undefined' ? req.body.productId : -1
     const quantity = typeof(req.body.quantity) !== 'undefined' ? req.body.quantity : -1
     const date = typeof(req.body.date) !== 'undefined' ? req.body.date : new Date()
 
-    if (userId < 0 || productId < 0 || quantity < 0 )
+    if ( quantity <= 0 )
         return res.sendStatus(400)
 
-    const product = (await Product.find({ _id: newProduct.product_id }))[0]
-
-    if (!product)
-        return res.sendStatus(404)
-
     try{
+
+        const product = await Product.findById(productId)
+
+        if (!product)
+            return res.sendStatus(404)
+    
         let newProduct = new UserProduct()
         newProduct.product_id = productId
-        newProduct.user_id = userId
+        newProduct.user_id = req.user.id
         newProduct.quantity = quantity
         newProduct.date = date
 
@@ -101,10 +101,10 @@ dashboard.post('/', isAdmin, async (req, res) => {
                 quantity: newProduct.quantity,
                 product: {
                     name: product.name,
-                    kcal: product.kcal,
-                    carbs: product.carbs,
-                    prots: product.prots,
-                    fats: product.fats,
+                    kcal: product.kcal * newProduct.quantity /100,
+                    carbs: product.carbs * newProduct.quantity /100,
+                    prots: product.prots * newProduct.quantity /100,
+                    fats: product.fats
                 }
             })
         })
@@ -138,27 +138,31 @@ dashboard.patch('/:id', isAdmin, async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.sendStatus(404)
 
-        let updateObj = {}
+        if(typeof(req.body.quantity) === 'undefined') 
+            return res.sendStatus(400)
 
-        if(typeof(req.body.quantity) !== 'undefined') updateObj['quantity'] = req.body.quantity
+        let updateObj = {
+            "quantity": req.body.quantity
+        }
         
         const userProduct = await UserProduct.findOneAndUpdate({_id: req.params.id}, updateObj)
         
         if (!userProduct)
             return res.sendStatus(404)
 
-        const product = (await Product.find({ _id: userProduct.product_id }))[0]
+        const product = await Product.findById(userProduct.product_id)
         
+
         res.json({
             _id: userProduct.id,
             date: userProduct.date,
             quantity: req.body.quantity,
             product: {
                 name: product.name,
-                kcal: product.kcal,
-                carbs: product.carbs,
-                prots: product.prots,
-                fats: product.fats,
+                kcal: product.kcal * req.body.quantity /100,
+                carbs: product.carbs * req.body.quantity /100,
+                prots: product.prots * req.body.quantity /100,
+                fats: product.fats
             }
         })
     }
