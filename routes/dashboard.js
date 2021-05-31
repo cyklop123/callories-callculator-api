@@ -76,7 +76,7 @@ dashboard.post('/', isAdmin, async (req, res) => {
     const quantity = typeof(req.body.quantity) !== 'undefined' ? req.body.quantity : -1
     const date = typeof(req.body.date) !== 'undefined' ? req.body.date : new Date()
 
-    if ( quantity <= 0 )
+    if ( productId < 0 || quantity <= 0 )
         return res.sendStatus(400)
 
     try{

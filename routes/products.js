@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 
 import {isAdmin} from './users'
 import Product from '../models/product'
+import UserProduct from '../models/userproduct'
 
 const products = express.Router()
 
@@ -72,6 +73,8 @@ products.delete('/:id', isAdmin, async(req, res) => {
     try{
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.sendStatus(404)
+
+        const a = await UserProduct.deleteMany({"product_id": req.params.id})
 
         const product = await Product.findByIdAndRemove(req.params.id, {__v:0}).exec()
         if(!product)
