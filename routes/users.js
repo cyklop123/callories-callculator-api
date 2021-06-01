@@ -10,6 +10,9 @@ users.post('/login', async (req, res) => {
     const username = req.body.username ? req.body.username : ""
     const password = req.body.password ? req.body.password : ""
 
+    if(username.length <= 0 || password.length <= 0)
+        return res.sendStatus(400)
+
     try{
         const user = await User.findOne({username}).exec()
         if(!user){
@@ -47,16 +50,14 @@ users.post('/register', async (req, res) => {
     const password = req.body.password ? req.body.password : ""
     const email = req.body.email ? req.body.email : ""
 
+    if (username.length <= 0 || password.length <= 0 || email.length <= 0)
+        return res.sendStatus(400)
+
+
     try{
         const user = await User.findOne({$or: [{username}, {email}],}).exec()
         if(user){
             res.sendStatus(403) 
-            return
-        }
-
-        if (username.lenght < 3 || password.lenght < 3 || email.lenght < 5)
-        {
-            res.sendStatus(400)
             return
         }
 
@@ -68,7 +69,7 @@ users.post('/register', async (req, res) => {
 
         newUser.save(err => {
             if(err) throw err
-            res.send("User created")
+            res.json({message: "User created"})
         })
     }  
     catch(e) {
