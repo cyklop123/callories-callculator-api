@@ -8,9 +8,11 @@ import { authenticate, users } from './routes/users'
 import dashboard from './routes/dashboard'
 import products from './routes/products'
 
+const env = process.env.NODE_ENV || 'dev'
+
 dotenv.config()
 
-mongoose.connect(process.env.DB_CONNECTION_STRING, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false})
+mongoose.connect(env !== 'test' ? process.env.DB_CONNECTION_STRING : process.env.DB_TEST_CONNECTION_STRING, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false})
 const db = mongoose.connection
 db.on('error', error => console.error(error))
 db.once('open', async () => {
@@ -29,3 +31,5 @@ app.use('/products', authenticate, products)
 app.use('/', authenticate, dashboard)
 
 app.listen(process.env.PORT, () => console.log("server is running on port " + process.env.PORT))
+
+export default app
