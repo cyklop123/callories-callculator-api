@@ -71,7 +71,7 @@ dashboard.get('/:date', async(req, res) => {
     }
 })
 
-dashboard.post('/', isAdmin, async (req, res) => {
+dashboard.post('/', async (req, res) => {
     const productId = typeof(req.body.productId) !== 'undefined' ? req.body.productId : -1
     const quantity = typeof(req.body.quantity) !== 'undefined' ? req.body.quantity : -1
     const date = typeof(req.body.date) !== 'undefined' ? req.body.date : new Date()
@@ -115,7 +115,7 @@ dashboard.post('/', isAdmin, async (req, res) => {
     }
 })
 
-dashboard.delete('/:id', isAdmin, async (req, res) => {
+dashboard.delete('/:id', async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.sendStatus(404)
@@ -133,7 +133,7 @@ dashboard.delete('/:id', isAdmin, async (req, res) => {
     }
 })
 
-dashboard.patch('/:id', isAdmin, async (req, res) => {
+dashboard.patch('/:id', async (req, res) => {
     try{
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.sendStatus(404)
