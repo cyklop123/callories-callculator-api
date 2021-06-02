@@ -11,6 +11,7 @@ let accessToken
 let testProductId
 let testUser
 let userProductId
+let userProductDate
 
 before(async () => {
     testUser = new User({
@@ -55,6 +56,7 @@ before(async () => {
     await userProduct.save()
 
     userProductId = userProduct.id
+    userProductDate = JSON.stringify(userProduct.date).split('T')[0]
 })
 
 describe('Dashboard routes', () => {
@@ -69,6 +71,18 @@ describe('Dashboard routes', () => {
             expect(res.body.userProducts).to.be.an('array')
             expect(res.body.summary).to.be.an('object').to.have.all.keys('kcal', 'carbs', 'prots', 'fats')
             expect(res.status).to.eq(200)
+        })
+
+        it('It should return correct calculations', async () => {
+            const res = await request(app)
+            .get(`/${userProductDate}`)
+            .set('Cookie', `JWT=${accessToken}`)
+            .send()
+
+            expect(res.body.summary.kcal).to.eq(1)
+            expect(res.body.summary.carbs).to.eq(1)
+            expect(res.body.summary.prots).to.eq(1)
+            expect(res.body.summary.fats).to.eq(1)
         })
 
         it('It should failed with 400 status code, invalid date', async () => {
@@ -95,6 +109,22 @@ describe('Dashboard routes', () => {
             expect(res.body).to.be.an('object').to.have.all.keys('product', 'quantity', '_id', 'date')
             expect(res.body.product).to.be.an('object').to.have.all.keys('name', 'kcal', 'carbs', 'prots', 'fats')
             expect(res.status).to.eq(200)
+        })
+
+        it('It should return correct calculations', async () => {
+            const res = await request(app)
+            .post('/')
+            .set('Cookie', `JWT=${accessToken}`)
+            .send({
+                "productId": testProductId,
+                "quantity": 20,
+                "date": "2021-05-28T14:58:25.817Z"
+            })
+
+            expect(res.body.product.kcal).to.eq(2)
+            expect(res.body.product.carbs).to.eq(2)
+            expect(res.body.product.prots).to.eq(2)
+            expect(res.body.product.fats).to.eq(2)
         })
 
         it('It should failed with 400 status code, because of productId', async () => {
@@ -136,6 +166,20 @@ describe('Dashboard routes', () => {
             expect(res.body).to.be.an('object').to.have.all.keys('product', 'quantity', '_id', 'date')
             expect(res.body.product).to.be.an('object').to.have.all.keys('name', 'kcal', 'carbs', 'prots', 'fats')
             expect(res.status).to.eq(200)
+        })
+
+        it('It should return correct calculations', async () => {
+            const res = await request(app)
+            .patch(`/${userProductId}`)
+            .set('Cookie', `JWT=${accessToken}`)
+            .send({
+                "quantity": 10
+            })
+
+            expect(res.body.product.kcal).to.eq(1)
+            expect(res.body.product.carbs).to.eq(1)
+            expect(res.body.product.prots).to.eq(1)
+            expect(res.body.product.fats).to.eq(1)
         })
 
         it('It should failed with 404 status code, user product not found', async () => {

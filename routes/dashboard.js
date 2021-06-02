@@ -104,7 +104,7 @@ dashboard.post('/', async (req, res) => {
                     kcal: product.kcal * newProduct.quantity /100,
                     carbs: product.carbs * newProduct.quantity /100,
                     prots: product.prots * newProduct.quantity /100,
-                    fats: product.fats
+                    fats: product.fats * newProduct.quantity /100,
                 }
             })
         })
@@ -162,7 +162,7 @@ dashboard.patch('/:id', async (req, res) => {
                 kcal: product.kcal * req.body.quantity /100,
                 carbs: product.carbs * req.body.quantity /100,
                 prots: product.prots * req.body.quantity /100,
-                fats: product.fats
+                fats: product.fats *  req.body.quantity /100,
             }
         })
     }
