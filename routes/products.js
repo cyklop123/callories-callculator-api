@@ -99,10 +99,9 @@ products.patch('/:id', isAdmin, async(req, res) => {
         if(typeof(req.body.prots) !== 'undefined') updateObj['prots'] = req.body.prots
         if(typeof(req.body.fats) !== 'undefined') updateObj['fats'] = req.body.fats
         
-        const product = await Product.findOneAndUpdate({_id: req.params.id}, updateObj)
+        const product = await Product.findOneAndUpdate({_id: req.params.id}, updateObj, {new: true})
         if (!product)
             return res.sendStatus(404)
-
         
         res.json(product)
     }
