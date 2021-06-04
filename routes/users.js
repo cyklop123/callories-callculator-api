@@ -38,7 +38,7 @@ users.post('/login', async (req, res) => {
             httpOnly: true
         })
     
-        res.send({accessToken, refreshToken})
+        res.send({accessToken, refreshToken, role: user.role})
     }  
     catch(e) {
         res.sendStatus(500)
