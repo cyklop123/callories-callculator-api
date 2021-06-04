@@ -1,7 +1,6 @@
 import dotenv from 'dotenv'
 import express from 'express'
 import cookieParser from 'cookie-parser'
-import cors from 'cors'
 import mongoose from 'mongoose'
 
 import { authenticate, users } from './routes/users'
@@ -24,7 +23,12 @@ const app = express()
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 app.use(cookieParser())
-app.use(cors())
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Cookie");
+    res.header("Access-Control-Allow-Credentials", true);
+    next();
+});
 
 app.use('/users', users)
 app.use('/products', authenticate, products)
