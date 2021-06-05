@@ -103,10 +103,11 @@ describe('Dashboard routes', () => {
             .send({
                 "productId": testProductId,
                 "quantity": 20,
+                "type": "dinner",
                 "date": "2021-05-28T14:58:25.817Z"
             })
         
-            expect(res.body).to.be.an('object').to.have.all.keys('product', 'quantity', '_id', 'date')
+            expect(res.body).to.be.an('object').to.have.all.keys('product', 'quantity', 'type', '_id', 'date')
             expect(res.body.product).to.be.an('object').to.have.all.keys('name', 'kcal', 'carbs', 'prots', 'fats')
             expect(res.status).to.eq(200)
         })
@@ -118,6 +119,7 @@ describe('Dashboard routes', () => {
             .send({
                 "productId": testProductId,
                 "quantity": 20,
+                "type": "dinner",
                 "date": "2021-05-28T14:58:25.817Z"
             })
 
@@ -147,6 +149,21 @@ describe('Dashboard routes', () => {
             .send({
                 "productId": testProductId,
                 "quantity": 0,
+                "type": "dinner",
+                "date": "2021-05-28T14:58:25.817Z"
+            })
+        
+            expect(res.status).to.eq(400)
+        })
+
+        it('It should failed with 400 status code, because of type', async () => {
+            const res = await request(app)
+            .post('/')
+            .set('Cookie', `JWT=${accessToken}`)
+            .send({
+                "productId": testProductId,
+                "quantity": 20,
+                "type": "suppeer",
                 "date": "2021-05-28T14:58:25.817Z"
             })
         
