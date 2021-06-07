@@ -6,6 +6,8 @@ import User from '../models/user'
 import Token from '../models/token'
 import Product from '../models/product'
 
+describe('Product routes', () => {
+
 let mockedProducts
 
 before(async () => {
@@ -27,7 +29,7 @@ describe('Products routes without user (testing authenticate function)', () => {
             const res = await request(app)
             .post('/products')
             .send()
-        
+            
             expect(res.status).to.eq(401)
         })
 
@@ -275,4 +277,6 @@ describe('Products routes with role: admin', () => {
 
 after(async () => {
     await Product.remove({})
+})
+
 })

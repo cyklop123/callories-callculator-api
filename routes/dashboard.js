@@ -46,6 +46,7 @@ dashboard.get('/:date', async(req, res) => {
                     date: 1,
                     quantity:1,
                     type:1,
+                    '_id': 1,
                     'product.name': 1,
                     'product.kcal': { $divide:[ { $multiply: ['$product.kcal', '$quantity'] } , 100] },
                     'product.carbs': { $divide:[ { $multiply: ['$product.carbs', '$quantity'] } , 100] },
@@ -58,6 +59,7 @@ dashboard.get('/:date', async(req, res) => {
                     _id: '$type',
                     products: {
                         '$push': {
+                            '_id': '$_id',
                             'date': '$date',
                             'quantity': '$quantity',
                             'name': '$product.name',
