@@ -8,12 +8,10 @@ import UserProduct from '../models/userproduct'
 const products = express.Router()
 
 products.get('/', async(req, res) => {
-    const name = req.query.name ? req.query.name : ""
-    if(name.length < 3)
-        return res.sendStatus(400)
+    const name = req.query.name ? req.query.name.trim() : ""
     
     try{
-        const products = await Product.find({name: {$regex: `.*${name}.*`, $options: 'i'}}, {name: 1, kcal: 1, carbs: 1, prots: 1, fats: 1}).exec()
+        const products = await Product.find({name: {$regex: `.*${name}.*`, $options: 'i'}}, {name: 1, kcal: 1, carbs: 1, prots: 1, fats: 1}).limit(50).exec()
         
         res.json(products)
     }  
